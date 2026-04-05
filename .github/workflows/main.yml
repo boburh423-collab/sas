@@ -13,6 +13,7 @@ env:
   JAVA_VERSION: '17'
   ANDROID_API: '34'
   BUILD_TOOLS: '34.0.0'
+  GRADLE_VERSION: '8.2'
 
 jobs:
 
@@ -53,6 +54,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Generate Gradle wrapper
+        run: gradle wrapper --gradle-version=${{ env.GRADLE_VERSION }} --distribution-type=bin
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
@@ -63,43 +72,26 @@ jobs:
             --no-daemon \
             -Dorg.gradle.jvmargs="-Xmx2g"
 
-      - name: Build Release APK (unsigned)
+      - name: Build Release APK
         run: |
           ./gradlew :android:assembleRelease \
             --stacktrace \
             --no-daemon \
             -Dorg.gradle.jvmargs="-Xmx2g"
 
-      - name: Sign Release APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_apk
-        with:
-          releaseDirectory: android/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: ${{ env.BUILD_TOOLS }}
-        continue-on-error: true
-
       - name: Collect APK artifacts
         run: |
           mkdir -p artifacts
-
           DEBUG="android/build/outputs/apk/debug/android-debug.apk"
           if [ -f "$DEBUG" ]; then
             cp "$DEBUG" artifacts/TowerDefense-debug.apk
-            echo "Debug APK ready"
+            echo "Debug APK ready: $(du -sh $DEBUG | cut -f1)"
           fi
-
           UNSIGNED="android/build/outputs/apk/release/android-release-unsigned.apk"
           if [ -f "$UNSIGNED" ]; then
             cp "$UNSIGNED" artifacts/TowerDefense-release-unsigned.apk
-            echo "Unsigned release APK ready"
+            echo "Release APK ready: $(du -sh $UNSIGNED | cut -f1)"
           fi
-
-          echo "=== Artifacts ==="
           ls -lh artifacts/
 
       - name: Upload Debug APK
@@ -123,8 +115,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: "Tower Defense ${{ github.ref_name }}"
-          draft: false
-          prerelease: false
           files: |
             artifacts/TowerDefense-debug.apk
             artifacts/TowerDefense-release-unsigned.apk
@@ -136,10 +126,7 @@ jobs:
             2. Enable Unknown Sources on your Android device
             3. Open the APK and tap Install
 
-            ### Build info
-            - Commit: ${{ github.sha }}
-            - Java: ${{ env.JAVA_VERSION }}
-            - Android API: ${{ env.ANDROID_API }}
+            Commit: ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -168,13 +155,13 @@ jobs:
             "platforms;android-${{ env.ANDROID_API }}" \
             "build-tools;${{ env.BUILD_TOOLS }}"
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-lint-${{ hashFiles('**/*.gradle*') }}
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Generate Gradle wrapper
+        run: gradle wrapper --gradle-version=${{ env.GRADLE_VERSION }} --distribution-type=bin
 
       - name: Make gradlew executable
         run: chmod +x gradlew
