@@ -2,6 +2,7 @@ package com.towerdefense.entities;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.towerdefense.managers.AssetLoader;
@@ -108,8 +109,8 @@ public class Enemy {
         if (hitFlash > 0)
             batch.setColor(1f, 1f - hitFlash, 1f - hitFlash, 1f);
 
-        var tex = assets.get(type.texKey);
-        batch.draw(tex,
+        TextureRegion region = new TextureRegion(assets.get(type.texKey));
+        batch.draw(region,
             position.x - size/2, position.y - size/2,
             size/2, size/2,
             size, size,

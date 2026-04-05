@@ -93,7 +93,7 @@ public class MenuScreen implements Screen {
     private void drawButton(Rectangle r, String label, Color c) {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         shapes.setColor(c);
-        shapes.rect(r.x, r.y, r.width, r.height, 8, 8, 8, 8);
+        shapes.rect(r.x, r.y, r.width, r.height);
         shapes.end();
 
         game.font.setColor(Color.WHITE);

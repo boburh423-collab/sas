@@ -1,6 +1,7 @@
 package com.towerdefense.entities;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
@@ -104,11 +105,10 @@ public class Tower {
     }
 
     public void draw(SpriteBatch batch, AssetLoader assets) {
-        // Draw range circle when selected (done by GameScreen)
-        // Draw tower
-        var tex = assets.get(type.texKey);
+        Texture tex = assets.get(type.texKey);
+        TextureRegion region = new TextureRegion(tex);
         float size = 52f;
-        batch.draw(tex,
+        batch.draw(region,
             position.x - size/2, position.y - size/2,
             size/2, size/2,
             size, size,

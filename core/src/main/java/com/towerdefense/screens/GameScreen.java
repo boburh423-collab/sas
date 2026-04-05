@@ -432,7 +432,7 @@ public class GameScreen implements Screen {
         if (selected) shapes.setColor(0.2f, 0.5f, 0.8f, 1f);
         else if (!canAfford) shapes.setColor(0.15f, 0.12f, 0.12f, 1f);
         else shapes.setColor(0.15f, 0.18f, 0.28f, 1f);
-        shapes.rect(tb.rect.x, tb.rect.y, tb.rect.width, tb.rect.height, 6, 6, 6, 6);
+        shapes.rect(tb.rect.x, tb.rect.y, tb.rect.width, tb.rect.height);
         shapes.end();
 
         // Border
@@ -518,7 +518,7 @@ public class GameScreen implements Screen {
     private void drawRectButton(Rectangle r, String label, Color c) {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         shapes.setColor(c);
-        shapes.rect(r.x, r.y, r.width, r.height, 6, 6, 6, 6);
+        shapes.rect(r.x, r.y, r.width, r.height);
         shapes.end();
         game.batch.begin();
         game.font.setColor(Color.WHITE);
