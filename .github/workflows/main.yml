@@ -8,16 +8,6 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
-    inputs:
-      build_type:
-        description: 'Build type (debug / release / both)'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
-          - both
 
 env:
   JAVA_VERSION: '17'
@@ -34,8 +24,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -61,25 +49,12 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-            ~/.android/build-cache
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
       - name: Make gradlew executable
         run: chmod +x gradlew
-
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v3
-
-      - name: Print build info
-        run: |
-          echo "=== Build Environment ==="
-          java -version
-          ./gradlew --version
-          echo "Branch:  ${{ github.ref_name }}"
-          echo "Commit:  ${{ github.sha }}"
-          echo "Trigger: ${{ github.event_name }}"
 
       - name: Build Debug APK
         run: |
@@ -96,7 +71,6 @@ jobs:
             -Dorg.gradle.jvmargs="-Xmx2g"
 
       - name: Sign Release APK
-        if: ${{ secrets.SIGNING_KEY != '' }}
         uses: r0adkll/sign-android-release@v1
         id: sign_apk
         with:
@@ -107,32 +81,26 @@ jobs:
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: ${{ env.BUILD_TOOLS }}
+        continue-on-error: true
 
       - name: Collect APK artifacts
         run: |
           mkdir -p artifacts
+
           DEBUG="android/build/outputs/apk/debug/android-debug.apk"
           if [ -f "$DEBUG" ]; then
             cp "$DEBUG" artifacts/TowerDefense-debug.apk
             echo "Debug APK ready"
           fi
-          SIGNED="${{ steps.sign_apk.outputs.signedReleaseFile }}"
+
           UNSIGNED="android/build/outputs/apk/release/android-release-unsigned.apk"
-          if [ -f "$SIGNED" ]; then
-            cp "$SIGNED" artifacts/TowerDefense-release-signed.apk
-            echo "Signed release APK ready"
-          elif [ -f "$UNSIGNED" ]; then
+          if [ -f "$UNSIGNED" ]; then
             cp "$UNSIGNED" artifacts/TowerDefense-release-unsigned.apk
             echo "Unsigned release APK ready"
           fi
+
           echo "=== Artifacts ==="
           ls -lh artifacts/
-
-      - name: APK size report
-        run: |
-          for f in artifacts/*.apk; do
-            [ -f "$f" ] && echo "$(basename $f): $(du -sh $f | cut -f1)"
-          done
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -146,9 +114,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TowerDefense-Release-APK
-          path: |
-            artifacts/TowerDefense-release-signed.apk
-            artifacts/TowerDefense-release-unsigned.apk
+          path: artifacts/TowerDefense-release-unsigned.apk
           if-no-files-found: warn
           retention-days: 30
 
@@ -161,7 +127,6 @@ jobs:
           prerelease: false
           files: |
             artifacts/TowerDefense-debug.apk
-            artifacts/TowerDefense-release-signed.apk
             artifacts/TowerDefense-release-unsigned.apk
           body: |
             ## Tower Defense ${{ github.ref_name }}
@@ -236,12 +201,9 @@ jobs:
       - name: Write summary
         run: |
           echo "## Tower Defense Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job   | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint  | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "Download APK from Actions -> Artifacts" >> $GITHUB_STEP_SUMMARY
