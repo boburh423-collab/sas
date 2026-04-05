@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+local.properties
+*.jks
+*.keystore
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+*.class
+
+# Logs
+*.log
+
+# Generated
+gen/
+out/
+
+# Assets that are generated at build time
+android/src/main/assets/fonts/
