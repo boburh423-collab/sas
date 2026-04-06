@@ -3,6 +3,7 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.towerdefense"
     compileSdk 34
+
     defaultConfig {
         applicationId "com.towerdefense.game"
         minSdk 26
@@ -10,29 +11,47 @@ android {
         versionCode 1
         versionName "1.0.0"
     }
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
+
     sourceSets {
         main {
             manifest.srcFile 'src/main/AndroidManifest.xml'
             java.srcDirs = ['src/main/java']
             assets.srcDirs = ['src/main/assets', '../core/assets']
             res.srcDirs = ['src/main/res']
-            jni.srcDirs = []
+            jniLibs.srcDirs = ['src/main/jniLibs']
         }
     }
+
     packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
         resources {
-            excludes += ['META-INF/robovm/ios/robovm.xml', 'META-INF/INDEX.LIST', 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA']
-            pickFirsts += ['**/libgdx.so','**/libGDX.so','**/libstb.so']
+            excludes += [
+                'META-INF/robovm/ios/robovm.xml',
+                'META-INF/INDEX.LIST',
+                'META-INF/*.SF',
+                'META-INF/*.DSA',
+                'META-INF/*.RSA'
+            ]
+            pickFirsts += [
+                '**/libgdx.so',
+                '**/libGDX.so',
+                '**/libstb.so'
+            ]
         }
     }
+
     buildTypes {
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled false      // 🔥 ENG MUHIM (R8 OFF)
+            shrinkResources false
+            debuggable false
         }
         debug {
             debuggable true
@@ -40,31 +59,40 @@ android {
     }
 }
 
-configurations { natives }
+configurations {
+    natives
+}
 
 dependencies {
     implementation project(':core')
+
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
     implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
     implementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+
     natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
     natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
     natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
     natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+
     natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-armeabi-v7a"
     natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a"
     natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86"
     natives "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64"
 }
 
-// Copy native libs task
+// Native kutubxonalarni ko‘chirish
 task copyAndroidNatives() {
     file("src/main/jniLibs").mkdirs()
-    configurations.natives.copy().files.each { jar ->
+
+    configurations.natives.files.each { jar ->
         def outputDir = null
-        if (jar.name.endsWith("natives-arm64-v8a.jar"))   outputDir = file("src/main/jniLibs/arm64-v8a")
-        if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("src/main/jniLibs/armeabi-v7a")
-        if (jar.name.endsWith("natives-x86_64.jar"))      outputDir = file("src/main/jniLibs/x86_64")
-        if (jar.name.endsWith("natives-x86.jar"))         outputDir = file("src/main/jniLibs/x86")
+
+        if (jar.name.contains("arm64-v8a"))   outputDir = file("src/main/jniLibs/arm64-v8a")
+        if (jar.name.contains("armeabi-v7a")) outputDir = file("src/main/jniLibs/armeabi-v7a")
+        if (jar.name.contains("x86_64"))      outputDir = file("src/main/jniLibs/x86_64")
+        if (jar.name.contains("x86"))         outputDir = file("src/main/jniLibs/x86")
+
         if (outputDir != null) {
             outputDir.mkdirs()
             copy {
@@ -75,8 +103,9 @@ task copyAndroidNatives() {
         }
     }
 }
-tasks.whenTaskAdded { packageTask ->
-    if (packageTask.name.contains("package") || packageTask.name.contains("assemble")) {
-        packageTask.dependsOn copyAndroidNatives
+
+tasks.whenTaskAdded { task ->
+    if (task.name.contains("package") || task.name.contains("assemble")) {
+        task.dependsOn copyAndroidNatives
     }
 }
